@@ -191,6 +191,48 @@
     background: #f8f9fa;
     font-weight: 600;
   }
+  .maturity-input-container {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 0 0 10px 10px;
+    border-top: 2px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 14px;
+  }
+  .maturity-input-container label {
+    font-weight: 600;
+    color: #333;
+  }
+  .maturity-input-container input {
+    width: 100px;
+    padding: 8px 12px;
+    border: 2px solid var(--primary-color);
+    border-radius: 6px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .maturity-input-container button {
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background 0.3s;
+  }
+  .maturity-input-container button:hover {
+    background: var(--primary-dark);
+  }
+  .maturity-input-container .hint {
+    color: #999;
+    font-size: 12px;
+    font-style: italic;
+  }
   .generate-btn {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
     color: white;
@@ -492,6 +534,12 @@
               </tbody>
             </table>
           </div>
+          <div class="maturity-input-container">
+            <label>💡 快速设置成熟度：</label>
+            <input type="number" id="mgmt-maturity-input" min="1" max="5" step="0.1" placeholder="1.0 - 5.0" />
+            <button onclick="setDimensionMaturity('mgmt')">应用</button>
+            <span class="hint">(输入1-5之间的成熟度等级，系统将自动计算各级别完成度)</span>
+          </div>
         </div>
 
         <div class="dimension-table-container">
@@ -545,6 +593,12 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div class="maturity-input-container">
+            <label>💡 快速设置成熟度：</label>
+            <input type="number" id="tech-maturity-input" min="1" max="5" step="0.1" placeholder="1.0 - 5.0" />
+            <button onclick="setDimensionMaturity('tech')">应用</button>
+            <span class="hint">(输入1-5之间的成熟度等级，系统将自动计算各级别完成度)</span>
           </div>
         </div>
 
@@ -600,6 +654,12 @@
               </tbody>
             </table>
           </div>
+          <div class="maturity-input-container">
+            <label>💡 快速设置成熟度：</label>
+            <input type="number" id="ops-maturity-input" min="1" max="5" step="0.1" placeholder="1.0 - 5.0" />
+            <button onclick="setDimensionMaturity('ops')">应用</button>
+            <span class="hint">(输入1-5之间的成熟度等级，系统将自动计算各级别完成度)</span>
+          </div>
         </div>
 
         <div class="dimension-table-container">
@@ -654,6 +714,12 @@
               </tbody>
             </table>
           </div>
+          <div class="maturity-input-container">
+            <label>💡 快速设置成熟度：</label>
+            <input type="number" id="dev-maturity-input" min="1" max="5" step="0.1" placeholder="1.0 - 5.0" />
+            <button onclick="setDimensionMaturity('dev')">应用</button>
+            <span class="hint">(输入1-5之间的成熟度等级，系统将自动计算各级别完成度)</span>
+          </div>
         </div>
 
         <div class="dimension-table-container">
@@ -707,6 +773,12 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div class="maturity-input-container">
+            <label>💡 快速设置成熟度：</label>
+            <input type="number" id="data-maturity-input" min="1" max="5" step="0.1" placeholder="1.0 - 5.0" />
+            <button onclick="setDimensionMaturity('data')">应用</button>
+            <span class="hint">(输入1-5之间的成熟度等级，系统将自动计算各级别完成度)</span>
           </div>
         </div>
 
@@ -880,6 +952,46 @@
       }
     });
   });
+
+  function setDimensionMaturity(dimension) {
+    const inputId = `${dimension}-maturity-input`;
+    const targetMaturity = parseFloat(document.getElementById(inputId).value);
+    
+    if (!targetMaturity || targetMaturity < 1 || targetMaturity > 5) {
+      alert('请输入1到5之间的成熟度等级！');
+      return;
+    }
+    
+    const config = dimensionConfig[dimension];
+    const targetLevel = Math.floor(targetMaturity);
+    const levelProgress = targetMaturity - targetLevel;
+    
+    for (let level = 1; level <= 5; level++) {
+      const total = config.levels[level - 1];
+      let full, partial;
+      
+      if (level < targetLevel) {
+        full = total;
+        partial = 0;
+      } else if (level === targetLevel) {
+        full = Math.floor(total * levelProgress);
+        partial = Math.ceil((total * levelProgress - full) * 2);
+        if (full + partial > total) partial = total - full;
+      } else {
+        full = 0;
+        partial = 0;
+      }
+      
+      const none = total - full - partial;
+      
+      document.getElementById(`${dimension}-${level}-full`).value = full;
+      document.getElementById(`${dimension}-${level}-partial`).value = partial;
+      document.getElementById(`${dimension}-${level}-none`).value = none;
+    }
+    
+    document.getElementById(inputId).value = '';
+    alert(`${config.name}的成熟度已设置为 ${targetMaturity} 级！`);
+  }
 
   function validateInputs() {
     for (const [key, config] of Object.entries(dimensionConfig)) {
@@ -1244,9 +1356,15 @@
     const colors = ['#ff6b6b', '#ffa94d', '#ffd43b', '#74c0fc', '#51cf66'];
     
     for (let i = 0; i < 5; i++) {
+      const level = i + 1;
+      const weight = level;
+      
       datasets.push({
         label: levelNames[i],
-        data: Object.values(dimensionResults).map(r => r.levelScores[i]),
+        data: Object.keys(dimensionConfig).map(dimension => {
+          const score = dimensionResults[dimension].levelScores[i];
+          return (score * weight) / 15;
+        }),
         backgroundColor: colors[i],
         borderWidth: 0
       });
@@ -1267,9 +1385,8 @@
           },
           y: {
             stacked: true,
-            max: 100,
             ticks: {
-              callback: value => value + '%',
+              callback: value => value.toFixed(1) + '%',
               font: { size: 12, family: "'Microsoft YaHei', Arial, sans-serif" }
             }
           }
@@ -1279,6 +1396,15 @@
             position: 'top',
             labels: {
               font: { size: 13, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y.toFixed(1);
+                return label + ': ' + value + '% (加权贡献)';
+              }
             }
           }
         }
