@@ -306,11 +306,11 @@
     order: 2;
   }
   .charts-container {
-       display: grid;
-       grid-template-columns: repeat(3, 1fr);
-       gap: 30px;
-       margin-bottom: 40px;
-     }
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    margin-bottom: 40px;
+  }
   .chart-card {
     background: white;
     padding: 25px;
@@ -856,14 +856,6 @@
             <h3>成熟度分布堆叠图</h3>
             <canvas id="stackedChart"></canvas>
           </div>
-          <div class="chart-card">
-            <h3>维度占比玫瑰图</h3>
-            <canvas id="roseChart"></canvas>
-          </div>
-          <div class="chart-card">
-            <h3>维度成熟度饼图</h3>
-            <canvas id="pieChart"></canvas>
-          </div>
         </div>
 
         <div class="dimension-scores-table">
@@ -888,8 +880,6 @@
   </div>
 
 <script>
-  Chart.register(ChartDataLabels);
-  
   const colorPicker = document.getElementById('themeColorPicker');
   const colorText = document.getElementById('themeColorText');
 
@@ -1240,8 +1230,6 @@
     createRadarChart(dimensionResults, primaryColor);
     createBarChart(dimensionResults);
     createStackedChart(dimensionResults);
-    createRoseChart(dimensionResults);
-    createPieChart(dimensionResults);
   }
 
   function createGaugeChart(maturity, color) {
@@ -1431,133 +1419,6 @@
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r},${g},${b},${alpha})`;
-  }
-
-  function createRoseChart(dimensionResults) {
-    const ctx = document.getElementById('roseChart').getContext('2d');
-    const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
-    const data = Object.values(dimensionResults).map(r => r.maturity);
-    
-    charts.rose = new Chart(ctx, {
-      type: 'polarArea',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: '成熟度等级',
-          data: data,
-          backgroundColor: data.map((v, i) => {
-            const baseColor = getMaturityColor(v);
-            return hexToRgba(baseColor, 0.7);
-          }),
-          borderColor: data.map(v => getMaturityColor(v)),
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        scales: {
-          r: {
-            beginAtZero: true,
-            max: 5,
-            ticks: {
-              stepSize: 1,
-              font: { size: 12, family: "'Microsoft YaHei', Arial, sans-serif" }
-            },
-            pointLabels: {
-              font: { size: 14, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" }
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: {
-              font: { size: 12, family: "'Microsoft YaHei', Arial, sans-serif" }
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const label = context.label || '';
-                const value = context.parsed.r.toFixed(2);
-                return `${label}: ${value} 级`;
-              }
-            }
-          }
-        }
-      }
-    });
-  }
-
-  function createPieChart(dimensionResults) {
-    const ctx = document.getElementById('pieChart').getContext('2d');
-    const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
-    const data = Object.values(dimensionResults).map(r => r.maturity);
-    
-    // 计算每个维度的占比（基于成熟度值）
-    const total = data.reduce((sum, val) => sum + val, 0);
-    const percentages = data.map(val => ((val / total) * 100).toFixed(1));
-    
-    charts.pie = new Chart(ctx, {
-      type: 'pie',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: data,
-          backgroundColor: data.map((v, i) => {
-            const baseColor = getMaturityColor(v);
-            return hexToRgba(baseColor, 0.8);
-          }),
-          borderColor: data.map(v => getMaturityColor(v)),
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-          legend: {
-            position: 'right',
-            labels: {
-              font: { size: 12, family: "'Microsoft YaHei', Arial, sans-serif" },
-              generateLabels: function(chart) {
-                const data = chart.data;
-                return data.labels.map((label, i) => ({
-                  text: `${label}: ${percentages[i]}%`,
-                  fillStyle: data.datasets[0].backgroundColor[i],
-                  strokeStyle: data.datasets[0].borderColor[i],
-                  lineWidth: 2,
-                  hidden: false,
-                  index: i
-                }));
-              }
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const label = context.label || '';
-                const value = context.parsed.toFixed(2);
-                const percentage = percentages[context.dataIndex];
-                return `${label}: ${value} 级 (${percentage}%)`;
-              }
-            }
-          },
-          datalabels: {
-            color: '#fff',
-            font: {
-              weight: 'bold',
-              size: 11
-            },
-            formatter: (value, context) => {
-              return percentages[context.dataIndex] + '%';
-            }
-          }
-        }
-      },
-      plugins: [ChartDataLabels]
-    });
   }
 </script>
 </body>
