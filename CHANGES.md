@@ -196,5 +196,109 @@ To adjust stacked chart weights, only modify the `weight` variable in the `creat
 
 ---
 
-**修复完成日期 / Fix Completion Date**: 2024-11-19
-**修复版本 / Fix Version**: 1.1.0
+## 问题3：成熟度计算不一致 / Issue 3: Inconsistent Maturity Calculation
+
+### 问题描述 / Problem Description
+当将维度设置为3、3、3、4、5级时，不同图表显示的成熟度不一致：
+- 热力图：正确显示 3、3、3、4、5
+- 关键洞察：错误显示最弱维度为 2.00 级（应为 3.00）
+- 整体成熟度仪表盘：显示 2.87 分（应为 3.60）
+- 雷达图/柱状图/详细评分表：错误显示 2、2、2、3.33、?
+
+When setting dimensions to maturity levels 3, 3, 3, 4, 5, different charts showed inconsistent maturity values:
+- Heatmap: Correctly showed 3, 3, 3, 4, 5
+- Key Insights: Incorrectly showed weakest dimension at 2.00 (should be 3.00)
+- Overall Maturity Gauge: Showed 2.87 (should be 3.60)
+- Radar/Bar/Scores Table: Incorrectly showed 2, 2, 2, 3.33, ?
+
+### 根本原因 / Root Cause
+`calculateDimensionMaturity` 函数使用加权平均算法计算成熟度，导致计算结果不符合CMMI标准：
+
+The `calculateDimensionMaturity` function used a weighted average algorithm that produced results incompatible with CMMI standards:
+
+```javascript
+// 旧算法 / Old algorithm
+const weightedAvg = weightedSum / totalWeight;  // 600 / 15 = 40
+const maturity = (weightedAvg / 100) * 5;       // (40/100) * 5 = 2.0 ❌
+```
+
+当1-3级全部完成时，应该得到3.0级，但旧算法计算出2.0级。
+
+When levels 1-3 are fully complete, it should yield 3.0, but the old algorithm calculated 2.0.
+
+### 解决方案 / Solution
+重写成熟度计算算法，实现严格的CMMI顺序合规性：
+
+Rewrote the maturity calculation algorithm to implement strict sequential CMMI compliance:
+
+```javascript
+// 新算法 / New algorithm
+let maturity = 0;
+let foundIncomplete = false;
+
+for (let level = 1; level <= 5; level++) {
+  const completion = (full * 1.0 + partial * 0.5) / total;
+  
+  if (!foundIncomplete) {
+    if (completion >= 1.0) {
+      maturity = level;  // 该级别已完成 / Level complete
+    } else {
+      maturity = (level - 1) + completion;  // 部分完成 / Partial completion
+      foundIncomplete = true;  // 停止计算更高级别 / Stop at higher levels
+    }
+  }
+}
+```
+
+### 关键原则 / Key Principles
+1. **顺序合规 / Sequential Compliance**: CMMI成熟度级别必须按顺序达成 (1→2→3→4→5)
+2. **严格前置条件 / Strict Prerequisites**: 如果低级别未完成，高级别完成度将被忽略
+3. **简单公式 / Simple Formula**: 成熟度 = 最高完成级别 + 下一级别进度
+
+1. CMMI maturity levels must be achieved in order (1→2→3→4→5)
+2. Higher level completion is ignored if lower levels are incomplete
+3. Maturity = (highest complete level) + (progress on next level)
+
+### 代码变更 / Code Changes
+
+#### 1. 修改 `calculateDimensionMaturity` 函数 / Modified `calculateDimensionMaturity` function
+- 位置 / Location: 行 1023-1053 / lines 1023-1053
+- 变更 / Change: 完全重写计算逻辑 / Complete rewrite of calculation logic
+- 影响 / Impact: 所有图表现在使用一致的成熟度值 / All charts now use consistent maturity values
+
+#### 2. 修改 `createStackedChart` 函数 / Modified `createStackedChart` function
+- 位置 / Location: 行 1358-1376 / lines 1358-1376
+- 变更 / Change: 移除 `(score * weight) / 15` 加权计算，直接使用 `score`
+- 变更 / Change: Removed `(score * weight) / 15` weighted calculation, directly use `score`
+- 影响 / Impact: 堆叠图现在与热力图显示一致 / Stacked chart now consistent with heatmap
+
+### 测试结果 / Test Results
+
+#### 主测试案例：3、3、3、4、5 / Main Test Case: 3, 3, 3, 4, 5
+```
+安全管理 / Security Management: 3.00 ✓
+安全技术 / Security Technology: 3.00 ✓
+安全运营 / Security Operations: 3.00 ✓
+开发安全 / Development Security: 4.00 ✓
+数据安全 / Data Security: 5.00 ✓
+整体成熟度 / Overall: 3.60 ✓
+```
+
+#### 边界测试 / Edge Cases
+- 1级50%完成 / Level 1 at 50%: 0.50 ✓
+- 全部0%完成 / All at 0%: 0.00 ✓
+- 1-2级完成，3级75% / Levels 1-2 complete, 3 at 75%: 2.75 ✓
+- 跳级完成测试 / Gap completion test: 正确忽略高级别 / Correctly ignores higher levels ✓
+
+### 影响范围 / Impact Scope
+✅ 雷达图显示一致 / Radar chart consistent
+✅ 柱状图显示一致 / Bar chart consistent
+✅ 评分表显示一致 / Scores table consistent
+✅ 关键洞察显示一致 / Key insights consistent
+✅ 仪表盘显示一致 / Gauge chart consistent
+✅ 强制执行CMMI顺序合规性 / Enforces CMMI sequential compliance
+
+---
+
+**修复完成日期 / Fix Completion Date**: 2024-12
+**修复版本 / Fix Version**: 1.2.0

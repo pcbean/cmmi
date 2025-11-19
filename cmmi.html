@@ -1022,8 +1022,8 @@
 
   function calculateDimensionMaturity(dimension) {
     let levelScores = [];
-    let totalWeight = 0;
-    let weightedSum = 0;
+    let maturity = 0;
+    let foundIncomplete = false;
     
     for (let level = 1; level <= 5; level++) {
       const total = dimensionConfig[dimension].levels[level - 1];
@@ -1031,18 +1031,20 @@
       const partial = parseInt(document.getElementById(`${dimension}-${level}-partial`).value) || 0;
       
       // 已完成计100%，部分完成计50%
-      const score = ((full * 1.0 + partial * 0.5) / total) * 100;
+      const completion = (full * 1.0 + partial * 0.5) / total;
+      const score = completion * 100;
       levelScores.push(score);
       
-      // 加权计算：级别越高权重越大
-      const weight = level;
-      weightedSum += score * weight;
-      totalWeight += weight;
+      // CMMI成熟度计算：严格按顺序，遇到第一个未完成的级别就停止
+      if (!foundIncomplete) {
+        if (completion >= 1.0) {
+          maturity = level;
+        } else {
+          maturity = (level - 1) + completion;
+          foundIncomplete = true;
+        }
+      }
     }
-    
-    // 加权平均转换为成熟度等级（1-5）
-    const weightedAvg = weightedSum / totalWeight;
-    const maturity = (weightedAvg / 100) * 5;
     
     return {
       maturity: maturity,
@@ -1361,14 +1363,11 @@
     const colors = ['#ff6b6b', '#ffa94d', '#ffd43b', '#74c0fc', '#51cf66'];
     
     for (let i = 0; i < 5; i++) {
-      const level = i + 1;
-      const weight = level;
-      
       datasets.push({
         label: levelNames[i],
         data: Object.keys(dimensionConfig).map(dimension => {
           const score = dimensionResults[dimension].levelScores[i];
-          return (score * weight) / 15;
+          return score;
         }),
         backgroundColor: colors[i],
         borderWidth: 0
