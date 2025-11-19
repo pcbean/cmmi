@@ -974,14 +974,12 @@
          full = total;
          partial = 0;
        } else if (level === targetLevel) {
-         if (levelProgress === 0) {
-           full = total;
-           partial = 0;
-         } else {
-           full = Math.floor(total * levelProgress);
-           partial = Math.ceil((total * levelProgress - full) * 2);
-           if (full + partial > total) partial = total - full;
-         }
+         full = total;
+         partial = 0;
+       } else if (level === targetLevel + 1 && levelProgress > 0) {
+         full = Math.floor(total * levelProgress);
+         partial = Math.ceil((total * levelProgress - full) * 2);
+         if (full + partial > total) partial = total - full;
        } else {
          full = 0;
          partial = 0;

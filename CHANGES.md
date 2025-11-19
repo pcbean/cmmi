@@ -2,6 +2,142 @@
 
 ## 概述 / Overview
 
+本次修复解决了成熟度级别输入的off-by-one错误，该错误导致用户手动输入的成熟度比预期值低1级。
+
+This fix resolves an off-by-one error in maturity level input that caused manually entered maturity levels to be 1 level lower than expected.
+
+---
+
+## 问题：成熟度级别输入偏差（Off-by-One Error）/ Issue: Maturity Level Input Offset (Off-by-One)
+
+### 问题描述 / Problem Description
+用户手动输入成熟度等级时出现错误：
+- 输入 2.5 级，图表显示为 1.5 级
+- 输入 3.5 级，图表显示为 2.5 级
+
+每次输入的级别都比预期值低 1 级。
+
+Users experienced incorrect maturity levels when manually inputting values:
+- Input 2.5 → displayed as 1.5
+- Input 3.5 → displayed as 2.5
+
+Every input was displayed 1 level lower than expected.
+
+### 根本原因 / Root Cause
+在 `setDimensionMaturity` 函数中，当成熟度包含小数部分时（如 2.5），算法错误地处理了完成度分配：
+
+```javascript
+// 旧代码逻辑 / Old code logic
+const targetLevel = Math.floor(2.5);  // = 2
+const levelProgress = 2.5 - 2;        // = 0.5
+
+// 第一次迭代 / First iteration (level = 1)
+if (level < targetLevel) {  // 1 < 2 ✓
+  full = total;  // Level 1: 100% complete
+  partial = 0;
+}
+
+// 第二次迭代 / Second iteration (level = 2)
+} else if (level === targetLevel) {  // 2 === 2 ✓
+  if (levelProgress === 0) {  // 0.5 !== 0, so else
+    // ...
+  } else {
+    full = Math.floor(total * 0.5);  // ❌ Level 2: 50% complete (WRONG!)
+    partial = Math.ceil(...);
+  }
+}
+```
+
+结果是：
+- Level 1: 100% 完成
+- Level 2: 50% 完成
+- 成熟度计算 = 1 + 0.5 = 1.5（而不是预期的 2.5）
+
+### 解决方案 / Solution
+修改完成度分配逻辑，使用新的条件判断：
+
+```javascript
+// 新代码逻辑 / New code logic
+const targetLevel = Math.floor(2.5);  // = 2
+const levelProgress = 2.5 - 2;        // = 0.5
+
+if (level < targetLevel) {        // 低于目标级别 / Below target level
+  full = total;
+  partial = 0;
+} else if (level === targetLevel) {  // 等于目标级别 / Equal to target level
+  full = total;  // ✓ Level 2: 100% complete
+  partial = 0;
+} else if (level === targetLevel + 1 && levelProgress > 0) {  // 下一级别 / Next level
+  full = Math.floor(total * levelProgress);
+  partial = Math.ceil(...);  // ✓ Level 3: 50% complete
+} else {
+  full = 0;
+  partial = 0;
+}
+```
+
+结果是：
+- Level 1: 100% 完成
+- Level 2: 100% 完成
+- Level 3: 50% 完成
+- 成熟度计算 = 2 + 0.5 = 2.5 ✓
+
+### 代码变更 / Code Changes
+
+#### 修改 `setDimensionMaturity` 函数 / Modified `setDimensionMaturity` function
+- 位置 / Location: 行 976-987 / lines 976-987
+- 关键变更 / Key change: 将小数部分的进度应用到下一级别，而不是当前级别
+
+```javascript
+// 修改前 / Before
+} else if (level === targetLevel) {
+  if (levelProgress === 0) {
+    full = total;
+    partial = 0;
+  } else {
+    full = Math.floor(total * levelProgress);  // ❌ Wrong!
+    partial = Math.ceil(...);
+  }
+}
+
+// 修改后 / After
+} else if (level === targetLevel) {
+  full = total;  // ✓ Correct!
+  partial = 0;
+} else if (level === targetLevel + 1 && levelProgress > 0) {
+  full = Math.floor(total * levelProgress);  // ✓ Now applies to next level
+  partial = Math.ceil(...);
+}
+```
+
+### 测试结果 / Test Results
+
+#### 测试场景 / Test Cases
+| 输入 / Input | 预期 / Expected | 实际 / Actual | 状态 / Status |
+|----------|----------|----------|----------|
+| 1.0 | 1.00 | 1.00 | ✓ |
+| 1.5 | 1.50 | 1.50 | ✓ |
+| 2.0 | 2.00 | 2.00 | ✓ |
+| 2.5 | 2.50 | 2.50 | ✓ |
+| 3.5 | 3.50 | 3.50 | ✓ |
+| 4.25 | 4.25 | 4.25 | ✓ |
+| 5.0 | 5.00 | 5.00 | ✓ |
+
+### 影响范围 / Impact Scope
+✅ 雷达图 / Radar chart
+✅ 柱状图 / Bar chart  
+✅ 仪表盘 / Gauge chart
+✅ 热力图 / Heatmap
+✅ 关键洞察 / Key insights
+✅ 详细评分表 / Scores table
+✅ 堆叠图 / Stacked chart
+
+---
+
+## 历史修复记录 / Historical Fix Records
+
+## 概述 / Overview
+
 本次修复采用**最小入侵原则**，解决了两个关键问题，同时保持了原有代码结构和功能的完整性。
 
 This fix follows the **minimal intrusion principle**, addressing two critical issues while maintaining the integrity of the original code structure and functionality.
