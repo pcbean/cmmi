@@ -8,6 +8,50 @@ This fix resolves an off-by-one error in maturity level input that caused manual
 
 ---
 
+## 新增功能：维度占比玫瑰图和饼图 / New Feature: Dimension Proportion Rose Chart and Pie Chart
+
+### 功能描述 / Feature Description
+为CMMI信息安全能力成熟度评估系统新增了两个可视化图表：
+1. **维度占比玫瑰图**：使用极坐标面积图展示五个维度的成熟度对比
+2. **维度成熟度饼图**：展示各维度在总体成熟度中的占比分布
+
+Added two new visualization charts to the CMMI information security capability maturity assessment system:
+1. **Dimension Proportion Rose Chart**: Uses polar area chart to show maturity comparison across five dimensions
+2. **Dimension Maturity Pie Chart**: Shows the proportion distribution of each dimension in overall maturity
+
+### 技术实现 / Technical Implementation
+
+#### HTML结构更新 / HTML Structure Updates
+- 在 `charts-container` 中新增两个图表容器
+- 添加对应的canvas元素：`roseChart` 和 `pieChart`
+- 调整图表布局从2列改为3列以适应6个图表
+
+#### JavaScript功能 / JavaScript Features
+- `createRoseChart()`: 创建极坐标面积图，扇形大小代表成熟度等级
+- `createPieChart()`: 创建饼图，显示各维度占比百分比，支持数据标签
+- 注册 `ChartDataLabels` 插件用于饼图百分比标签显示
+- 更新 `generateCharts()` 主函数调用新图表创建函数
+
+#### 样式优化 / Style Optimization
+- 图表容器布局改为3列：`grid-template-columns: repeat(3, 1fr)`
+- 保持响应式设计，小屏幕自动调整为单列布局
+
+### 功能特点 / Feature Highlights
+- **颜色映射**：根据成熟度等级自动调整颜色（绿色=优秀，蓝色=良好，黄色=中等，橙色=较低，红色=差）
+- **交互性**：支持鼠标悬停显示详细数值和百分比
+- **数据一致性**：使用相同的 `dimensionResults` 数据源，确保与其他图表数据一致
+- **兼容性**：与现有功能完全兼容，支持主题色切换
+
+### 测试验证 / Testing Verification
+- ✅ 页面正常加载，无JavaScript错误
+- ✅ 图表容器正确显示（3列布局）
+- ✅ 玫瑰图显示5个维度的成熟度对比
+- ✅ 饼图显示各维度占比百分比
+- ✅ 鼠标悬停显示详细信息
+- ✅ 响应式布局正常工作
+
+---
+
 ## 问题：成熟度级别输入偏差（Off-by-One Error）/ Issue: Maturity Level Input Offset (Off-by-One)
 
 ### 问题描述 / Problem Description
