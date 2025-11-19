@@ -856,6 +856,14 @@
             <h3>成熟度分布堆叠图</h3>
             <canvas id="stackedChart"></canvas>
           </div>
+          <div class="chart-card">
+            <h3>维度占比玫瑰图</h3>
+            <canvas id="roseChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>维度成熟度饼状图</h3>
+            <canvas id="pieChart"></canvas>
+          </div>
         </div>
 
         <div class="dimension-scores-table">
@@ -1221,16 +1229,18 @@
   }
 
   function generateCharts(dimensionResults, overallMaturity) {
-    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
-    
-    Object.values(charts).forEach(chart => chart && chart.destroy());
-    charts = {};
-    
-    createGaugeChart(overallMaturity, primaryColor);
-    createRadarChart(dimensionResults, primaryColor);
-    createBarChart(dimensionResults);
-    createStackedChart(dimensionResults);
-  }
+     const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+
+     Object.values(charts).forEach(chart => chart && chart.destroy());
+     charts = {};
+
+     createGaugeChart(overallMaturity, primaryColor);
+     createRadarChart(dimensionResults, primaryColor);
+     createBarChart(dimensionResults);
+     createStackedChart(dimensionResults);
+     createRoseChart(dimensionResults);
+     createPieChart(dimensionResults);
+   }
 
   function createGaugeChart(maturity, color) {
     const ctx = document.getElementById('gaugeChart').getContext('2d');
@@ -1411,6 +1421,96 @@
           }
         }
       }
+    });
+  }
+
+  function createRoseChart(dimensionResults) {
+    const ctx = document.getElementById('roseChart').getContext('2d');
+    const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
+    const data = Object.values(dimensionResults).map(r => r.maturity);
+    const colors = data.map(v => getMaturityColor(v));
+    
+    charts.rose = new Chart(ctx, {
+      type: 'polarArea',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: colors.map(c => hexToRgba(c, 0.7)),
+          borderColor: colors,
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          r: {
+            beginAtZero: true,
+            max: 5,
+            ticks: {
+              stepSize: 1,
+              font: { size: 12, family: "'Microsoft YaHei', Arial, sans-serif" }
+            },
+            pointLabels: {
+              font: { size: 14, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" }
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+
+  function createPieChart(dimensionResults) {
+    const ctx = document.getElementById('pieChart').getContext('2d');
+    const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
+    const data = Object.values(dimensionResults).map(r => r.maturity);
+    const colors = data.map(v => getMaturityColor(v));
+    
+    charts.pie = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: colors.map(c => hexToRgba(c, 0.8)),
+          borderColor: colors,
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              font: { size: 13, family: "'Microsoft YaHei', Arial, sans-serif" },
+              padding: 15
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                return label + ': ' + value.toFixed(2) + ' 级';
+              }
+            }
+          },
+          datalabels: {
+            color: '#fff',
+            font: { weight: 'bold', size: 12 },
+            formatter: function(value) {
+              return value.toFixed(2);
+            }
+          }
+        }
+      },
+      plugins: [ChartDataLabels]
     });
   }
 
