@@ -954,44 +954,49 @@
   });
 
   function setDimensionMaturity(dimension) {
-    const inputId = `${dimension}-maturity-input`;
-    const targetMaturity = parseFloat(document.getElementById(inputId).value);
-    
-    if (!targetMaturity || targetMaturity < 1 || targetMaturity > 5) {
-      alert('请输入1到5之间的成熟度等级！');
-      return;
-    }
-    
-    const config = dimensionConfig[dimension];
-    const targetLevel = Math.floor(targetMaturity);
-    const levelProgress = targetMaturity - targetLevel;
-    
-    for (let level = 1; level <= 5; level++) {
-      const total = config.levels[level - 1];
-      let full, partial;
-      
-      if (level < targetLevel) {
-        full = total;
-        partial = 0;
-      } else if (level === targetLevel) {
-        full = Math.floor(total * levelProgress);
-        partial = Math.ceil((total * levelProgress - full) * 2);
-        if (full + partial > total) partial = total - full;
-      } else {
-        full = 0;
-        partial = 0;
-      }
-      
-      const none = total - full - partial;
-      
-      document.getElementById(`${dimension}-${level}-full`).value = full;
-      document.getElementById(`${dimension}-${level}-partial`).value = partial;
-      document.getElementById(`${dimension}-${level}-none`).value = none;
-    }
-    
-    document.getElementById(inputId).value = '';
-    alert(`${config.name}的成熟度已设置为 ${targetMaturity} 级！`);
-  }
+     const inputId = `${dimension}-maturity-input`;
+     const targetMaturity = parseFloat(document.getElementById(inputId).value);
+
+     if (!targetMaturity || targetMaturity < 1 || targetMaturity > 5) {
+       alert('请输入1到5之间的成熟度等级！');
+       return;
+     }
+
+     const config = dimensionConfig[dimension];
+     const targetLevel = Math.floor(targetMaturity);
+     const levelProgress = targetMaturity - targetLevel;
+
+     for (let level = 1; level <= 5; level++) {
+       const total = config.levels[level - 1];
+       let full, partial;
+
+       if (level < targetLevel) {
+         full = total;
+         partial = 0;
+       } else if (level === targetLevel) {
+         if (levelProgress === 0) {
+           full = total;
+           partial = 0;
+         } else {
+           full = Math.floor(total * levelProgress);
+           partial = Math.ceil((total * levelProgress - full) * 2);
+           if (full + partial > total) partial = total - full;
+         }
+       } else {
+         full = 0;
+         partial = 0;
+       }
+
+       const none = total - full - partial;
+
+       document.getElementById(`${dimension}-${level}-full`).value = full;
+       document.getElementById(`${dimension}-${level}-partial`).value = partial;
+       document.getElementById(`${dimension}-${level}-none`).value = none;
+     }
+
+     document.getElementById(inputId).value = '';
+     alert(`${config.name}的成熟度已设置为 ${targetMaturity} 级！`);
+   }
 
   function validateInputs() {
     for (const [key, config] of Object.entries(dimensionConfig)) {
