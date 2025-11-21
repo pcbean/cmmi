@@ -1264,18 +1264,18 @@
   function calculateDimensionMaturity(dimension, mode = 'weighted') {
     let levelScores = [];
     let maturity = 0;
-    
+
     for (let level = 1; level <= 5; level++) {
       const total = dimensionConfig[dimension].levels[level - 1];
       const full = parseInt(document.getElementById(`${dimension}-${level}-full`).value) || 0;
       const partial = parseInt(document.getElementById(`${dimension}-${level}-partial`).value) || 0;
-      
+
       // 已完成计100%，部分完成计50%
       const completion = (full * 1.0 + partial * 0.5) / total;
       const score = completion * 100;
       levelScores.push(score);
     }
-    
+
     if (mode === 'strict') {
       // 严格CMMI模式：严格按顺序，遇到第一个未完成的级别就停止
       let foundIncomplete = false;
@@ -1292,25 +1292,48 @@
       }
     } else {
       // 加权平均模式：综合考虑各级别能力
-      // 计算加权成熟度：每个级别的完成度 * 该级别的权重
-      // 权重设计：1级=1.0, 2级=2.0, 3级=3.0, 4级=4.0, 5级=5.0
-      let weightedSum = 0;
-      let totalWeight = 0;
-      
+      // 适用于实际场景，组织不一定按照严格的CMMI顺序完成
+      // 基本逻辑：找最高的有完成度的级别作为基础，然后考虑更高级别的额外进度
+
+      let baseLevel = 0;
+      let nextLevelCompletion = 0;
+
+      // 找最高的有进度的级别
       for (let level = 1; level <= 5; level++) {
-        const completion = levelScores[level - 1] / 100; // 0-1之间
-        const weight = level; // 级别越高权重越大
-        weightedSum += completion * weight;
-        totalWeight += 1; // 每个级别都参与计算
+        const completion = levelScores[level - 1] / 100;
+        if (completion > 0) {
+          baseLevel = level;
+          // 如果下一级也有进度，记录下来
+          if (level < 5) {
+            nextLevelCompletion = levelScores[level] / 100;
+          }
+        }
       }
-      
-      // 最终成熟度 = 加权和 / 总级别数
-      maturity = weightedSum / totalWeight;
-      
+
+      // 计算最终成熟度
+      if (baseLevel === 0) {
+        maturity = 0;
+      } else if (baseLevel === 5) {
+        // 如果已到5级，直接使用5级的完成度
+        maturity = 4 + (levelScores[4] / 100);
+      } else {
+        // 基础成熟度 = 该级别 + 该级别的完成度贡献（不满100%的部分）
+        const baseCompletion = levelScores[baseLevel - 1] / 100;
+
+        // 如果该级别完全完成，检查下一级的进度
+        if (baseCompletion >= 0.95) {
+          // 下一级的进度最多贡献 0.5 个级别
+          maturity = baseLevel + Math.min(nextLevelCompletion * 0.5, 0.5);
+        } else {
+          // 该级别没有完全完成，基础成熟度 = 上一级 + 该级别的进度
+          maturity = (baseLevel - 1) + baseCompletion;
+        }
+      }
+
       // 确保成熟度在合理范围内
       maturity = Math.max(0, Math.min(5, maturity));
     }
-    
+
     return {
       maturity: maturity,
       levelScores: levelScores
@@ -1841,80 +1864,79 @@
   }
 
   function createRoseChart(dimensionResults, color) {
-    const ctx = document.getElementById('roseChart').getContext('2d');
-    const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
-    const data = Object.values(dimensionResults).map(r => r.maturity);
-    const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
-    const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
+     const ctx = document.getElementById('roseChart').getContext('2d');
+     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
+     const data = Object.values(dimensionResults).map(r => r.maturity);
+     const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
 
-    // Create different colors for each dimension using HSL
-    const colors = [];
-    const hslStart = rgbToHsl(primaryColor);
-    const hslEnd = rgbToHsl(primaryDark);
+     // Create different colors for each dimension using HSL with fixed lightness
+     const colors = [];
+     const hslStart = rgbToHsl(primaryColor);
 
-    for (let i = 0; i < data.length; i++) {
-      const hue = (hslStart.h + (i / data.length * 60)) % 360;
-      const saturation = hslStart.s;
-      const lightness = hslStart.l - (i / data.length * 20);
-      const rgbColor = hslToRgb(hue, saturation, lightness);
-      colors.push(rgbColor);
-    }
+     for (let i = 0; i < data.length; i++) {
+       const hue = (hslStart.h + (i / data.length * 60)) % 360;
+       const saturation = hslStart.s;
+       // Use fixed lightness levels for consistency - not too dark, not too light
+       const lightness = 50 - (i % 5) * 8;
+       const rgbColor = hslToRgb(hue, saturation, lightness);
+       colors.push(rgbColor);
+     }
 
-    // Create gradients for each segment using different colors
-    const gradients = colors.map((c, i) => {
-      const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
-      gradient.addColorStop(0, hexToRgba(c, 0.8));
-      gradient.addColorStop(1, hexToRgba(adjustColorBrightness(c, -30), 0.4));
-      return gradient;
-    });
-    
-    charts.rose = new Chart(ctx, {
-      type: 'polarArea',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: data,
-          backgroundColor: gradients,
-          borderColor: primaryColor,
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        scales: {
-          r: {
-            beginAtZero: true,
-            max: 5,
-            ticks: {
-              stepSize: 1,
-              font: { size: 12, family: "'Microsoft YaHei', Arial, sans-serif" },
-              color: '#666'
-            },
-            pointLabels: {
-              font: { size: 14, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" },
-              color: '#333'
-            },
-            grid: {
-              color: '#e0e0e0'
-            }
-          }
-        },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                return context.label + ': ' + context.parsed.r.toFixed(2) + ' 级';
-              }
-            }
-          }
-        }
-      }
-    });
+     // Create gradients for each segment using different colors
+     const gradients = colors.map((c, i) => {
+       const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
+       gradient.addColorStop(0, hexToRgba(c, 0.7));
+       gradient.addColorStop(1, hexToRgba(adjustColorBrightness(c, -15), 0.5));
+       return gradient;
+     });
 
-    renderRoseChartLegend(labels, colors, data);
-  }
+     charts.rose = new Chart(ctx, {
+       type: 'polarArea',
+       data: {
+         labels: labels,
+         datasets: [{
+           data: data,
+           backgroundColor: gradients,
+           borderColor: primaryColor,
+           borderWidth: 2
+         }]
+       },
+       options: {
+         responsive: true,
+         maintainAspectRatio: true,
+         scales: {
+           r: {
+             beginAtZero: true,
+             max: 5,
+             ticks: {
+               stepSize: 1,
+               font: { size: 12, family: "'Microsoft YaHei', Arial, sans-serif" },
+               color: '#666'
+             },
+             pointLabels: {
+               font: { size: 14, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" },
+               color: '#333'
+             },
+             grid: {
+               color: '#e0e0e0'
+             }
+           }
+         },
+         plugins: {
+           legend: { display: false },
+           tooltip: {
+             callbacks: {
+               label: function(context) {
+                 return context.label + ': ' + context.parsed.r.toFixed(2) + ' 级';
+               }
+             }
+           }
+         }
+       }
+     });
+
+     renderRoseChartLegend(labels, colors, data);
+   }
 
   function renderRoseChartLegend(labels, colors, data) {
     const legendContainer = document.getElementById('roseChartLegend');
@@ -1929,75 +1951,79 @@
   }
 
   function createPieChart(dimensionResults, color) {
-    const ctx = document.getElementById('pieChart').getContext('2d');
-    const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
-    const data = Object.values(dimensionResults).map(r => r.maturity);
-    const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+     const ctx = document.getElementById('pieChart').getContext('2d');
+     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
+     const data = Object.values(dimensionResults).map(r => r.maturity);
+     const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
 
-    // Create different colors for each dimension using HSL
-    const colors = [];
-    const hslStart = rgbToHsl(primaryColor);
+     // Use the same color generation method as dimension cards
+     const levelColors = generateLevelColors(primaryColor);
 
-    for (let i = 0; i < data.length; i++) {
-      const hue = (hslStart.h + (i / data.length * 60)) % 360;
-      const saturation = hslStart.s;
-      const lightness = hslStart.l - (i / data.length * 20);
-      const rgbColor = hslToRgb(hue, saturation, lightness);
-      colors.push(rgbColor);
-    }
+     // Create a color palette by cycling through different hues
+     const colors = [];
+     const hslStart = rgbToHsl(primaryColor);
 
-    // Create gradients for each segment using different colors
-    const gradients = colors.map((c, i) => {
-      const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
-      gradient.addColorStop(0, c);
-      gradient.addColorStop(1, adjustColorBrightness(c, -30));
-      return gradient;
-    });
-    
-    charts.pie = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: data,
-          backgroundColor: gradients,
-          borderColor: primaryColor,
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              font: { size: 13, family: "'Microsoft YaHei', Arial, sans-serif" },
-              padding: 15,
-              color: '#333'
-            }
-          },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const label = context.label || '';
-                const value = context.parsed || 0;
-                return label + ': ' + value.toFixed(2) + ' 级';
-              }
-            }
-          },
-          datalabels: {
-            color: '#fff',
-            font: { weight: 'bold', size: 12 },
-            formatter: function(value) {
-              return value.toFixed(2);
-            }
-          }
-        }
-      },
-      plugins: [ChartDataLabels]
-    });
-  }
+     for (let i = 0; i < data.length; i++) {
+       const hue = (hslStart.h + (i / data.length * 60)) % 360;
+       const saturation = hslStart.s;
+       // Use fixed lightness levels for consistency
+       const lightness = 50 - (i % 5) * 10;
+       const rgbColor = hslToRgb(hue, saturation, lightness);
+       colors.push(rgbColor);
+     }
+
+     // Create gradients for each segment using different colors
+     const gradients = colors.map((c, i) => {
+       const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
+       gradient.addColorStop(0, c);
+       gradient.addColorStop(1, adjustColorBrightness(c, -15));
+       return gradient;
+     });
+
+     charts.pie = new Chart(ctx, {
+       type: 'doughnut',
+       data: {
+         labels: labels,
+         datasets: [{
+           data: data,
+           backgroundColor: gradients,
+           borderColor: primaryColor,
+           borderWidth: 2
+         }]
+       },
+       options: {
+         responsive: true,
+         maintainAspectRatio: true,
+         plugins: {
+           legend: {
+             position: 'bottom',
+             labels: {
+               font: { size: 13, family: "'Microsoft YaHei', Arial, sans-serif" },
+               padding: 15,
+               color: '#333'
+             }
+           },
+           tooltip: {
+             callbacks: {
+               label: function(context) {
+                 const label = context.label || '';
+                 const value = context.parsed || 0;
+                 return label + ': ' + value.toFixed(2) + ' 级';
+               }
+             }
+           },
+           datalabels: {
+             color: '#fff',
+             font: { weight: 'bold', size: 12 },
+             formatter: function(value) {
+               return value.toFixed(2);
+             }
+           }
+         }
+       },
+       plugins: [ChartDataLabels]
+     });
+   }
 
   function hexToRgba(hex, alpha) {
      if (!hex || typeof hex !== 'string') hex = '#667eea';
