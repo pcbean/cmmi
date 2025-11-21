@@ -316,6 +316,15 @@
     padding: 25px;
     border-radius: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+  }
+  .chart-card:first-child {
+    min-height: 400px;
+  }
+  .chart-card canvas {
+    flex: 1;
+    max-height: 350px;
   }
   .chart-card.full-width {
     grid-column: 1 / -1;
@@ -841,7 +850,7 @@
 
         <div class="charts-container">
           <div class="chart-card">
-            <h3>整体成熟度仪表盘</h3>
+            <h3>整体成熟度速度计</h3>
             <canvas id="gaugeChart"></canvas>
           </div>
           <div class="chart-card">
@@ -1246,12 +1255,26 @@
     const ctx = document.getElementById('gaugeChart').getContext('2d');
     const percentage = (maturity / 5) * 100;
     
+    // Create gradient for the gauge
+    const gradient = ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(0.5, getComputedStyle(document.documentElement).getPropertyValue('--theme-color').trim());
+    gradient.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim());
+    
+    // Create background gradient
+    const bgGradient = ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
+    bgGradient.addColorStop(0, '#ff6b6b');
+    bgGradient.addColorStop(0.25, '#ffa94d');
+    bgGradient.addColorStop(0.5, '#ffd43b');
+    bgGradient.addColorStop(0.75, '#74c0fc');
+    bgGradient.addColorStop(1, '#51cf66');
+    
     charts.gauge = new Chart(ctx, {
       type: 'doughnut',
       data: {
         datasets: [{
           data: [percentage, 100 - percentage],
-          backgroundColor: [getMaturityColor(maturity), '#e0e0e0'],
+          backgroundColor: [gradient, '#f8f9fa'],
           borderWidth: 0
         }]
       },
@@ -1260,23 +1283,98 @@
         maintainAspectRatio: true,
         rotation: -90,
         circumference: 180,
-        cutout: '75%',
-        plugins: { legend: { display: false }, tooltip: { enabled: false } }
+        cutout: '70%',
+        plugins: { 
+          legend: { display: false }, 
+          tooltip: { enabled: false }
+        }
       },
       plugins: [{
         afterDraw: (chart) => {
           const ctx = chart.ctx;
           const width = chart.width;
           const height = chart.height;
-          ctx.restore();
-          ctx.font = 'bold 32px Arial';
+          const centerX = width / 2;
+          const centerY = height / 1.25;
+          const radius = Math.min(width, height) / 2.3;
+          
+          ctx.save();
+          
+          // Draw colored background arc
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius + 5, Math.PI, 2 * Math.PI);
+          ctx.strokeStyle = bgGradient;
+          ctx.lineWidth = 10;
+          ctx.stroke();
+          
+          // Draw gear ticks
+          ctx.strokeStyle = '#666';
+          ctx.lineWidth = 2;
+          for (let i = 0; i <= 10; i++) {
+            const angle = Math.PI + (Math.PI * i / 10);
+            const isMajor = i % 2 === 0;
+            const tickLength = isMajor ? 15 : 8;
+            const tickWidth = isMajor ? 2 : 1;
+            
+            const startX = centerX + Math.cos(angle) * (radius - tickLength);
+            const startY = centerY + Math.sin(angle) * (radius - tickLength);
+            const endX = centerX + Math.cos(angle) * radius;
+            const endY = centerY + Math.sin(angle) * radius;
+            
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.lineWidth = tickWidth;
+            ctx.stroke();
+            
+            // Draw tick labels for major ticks
+            if (isMajor) {
+              const labelX = centerX + Math.cos(angle) * (radius + 25);
+              const labelY = centerY + Math.sin(angle) * (radius + 25);
+              ctx.font = 'bold 14px Arial';
+              ctx.fillStyle = '#333';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText((i * 0.5).toFixed(1), labelX, labelY);
+            }
+          }
+          
+          // Draw center circle
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, 8, 0, 2 * Math.PI);
+          ctx.fillStyle = color;
+          ctx.fill();
+          
+          // Draw maturity value
+          ctx.font = 'bold 42px Arial';
           ctx.textBaseline = 'middle';
           ctx.fillStyle = '#333';
           const text = maturity.toFixed(2);
           const textX = Math.round((width - ctx.measureText(text).width) / 2);
-          const textY = height / 1.5;
+          const textY = height / 1.4;
           ctx.fillText(text, textX, textY);
-          ctx.save();
+          
+          // Draw level indicator
+          ctx.font = '18px Arial';
+          ctx.fillStyle = '#666';
+          const levelText = '级';
+          const levelX = textX + ctx.measureText(text).width + 12;
+          ctx.fillText(levelText, levelX, textY);
+          
+          // Draw maturity description
+          let descText = '';
+          if (maturity >= 4.5) descText = '优秀';
+          else if (maturity >= 3.5) descText = '良好';
+          else if (maturity >= 2.5) descText = '中等';
+          else if (maturity >= 1.5) descText = '一般';
+          else descText = '待改进';
+          
+          ctx.font = '16px Arial';
+          ctx.fillStyle = color;
+          ctx.textAlign = 'center';
+          ctx.fillText(descText, width / 2, textY + 30);
+          
+          ctx.restore();
         }
       }]
     });
@@ -1287,6 +1385,15 @@
     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
     const data = Object.values(dimensionResults).map(r => r.maturity);
     
+    // Create gradient for the radar chart
+    const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
+    gradient.addColorStop(0, hexToRgba(color, 0.4));
+    gradient.addColorStop(1, hexToRgba(color, 0.1));
+    
+    const borderGradient = ctx.createLinearGradient(0, 0, ctx.canvas.width, ctx.canvas.height);
+    borderGradient.addColorStop(0, color);
+    borderGradient.addColorStop(1, getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim());
+    
     charts.radar = new Chart(ctx, {
       type: 'radar',
       data: {
@@ -1294,11 +1401,13 @@
         datasets: [{
           label: '成熟度等级',
           data: data,
-          backgroundColor: hexToRgba(color, 0.2),
-          borderColor: color,
+          backgroundColor: gradient,
+          borderColor: borderGradient,
           borderWidth: 3,
           pointBackgroundColor: color,
-          pointRadius: 5
+          pointBorderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim(),
+          pointRadius: 5,
+          pointBorderWidth: 2
         }]
       },
       options: {
@@ -1310,10 +1419,15 @@
             max: 5,
             ticks: {
               stepSize: 1,
-              font: { size: 14, family: "'Microsoft YaHei', Arial, sans-serif" }
+              font: { size: 14, family: "'Microsoft YaHei', Arial, sans-serif" },
+              color: '#666'
             },
             pointLabels: {
-              font: { size: 16, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" }
+              font: { size: 16, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" },
+              color: '#333'
+            },
+            grid: {
+              color: '#e0e0e0'
             }
           }
         },
@@ -1326,6 +1440,16 @@
     const ctx = document.getElementById('barChart').getContext('2d');
     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
     const data = Object.values(dimensionResults).map(r => r.maturity);
+    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+    const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
+    
+    // Create gradients for each bar
+    const gradients = data.map((v, i) => {
+      const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+      gradient.addColorStop(0, primaryColor);
+      gradient.addColorStop(1, primaryDark);
+      return gradient;
+    });
     
     charts.bar = new Chart(ctx, {
       type: 'bar',
@@ -1334,8 +1458,8 @@
         datasets: [{
           label: '成熟度等级',
           data: data,
-          backgroundColor: data.map(v => getMaturityColor(v)),
-          borderColor: data.map(v => getMaturityColor(v)),
+          backgroundColor: gradients,
+          borderColor: primaryColor,
           borderWidth: 2
         }]
       },
@@ -1345,7 +1469,11 @@
         scales: {
           x: {
             ticks: {
-              font: { size: 14, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" }
+              font: { size: 14, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" },
+              color: '#333'
+            },
+            grid: {
+              display: false
             }
           },
           y: {
@@ -1353,11 +1481,24 @@
             max: 5,
             ticks: {
               stepSize: 1,
-              font: { size: 13, family: "'Microsoft YaHei', Arial, sans-serif" }
+              font: { size: 13, family: "'Microsoft YaHei', Arial, sans-serif" },
+              color: '#666'
+            },
+            grid: {
+              color: '#e0e0e0'
             }
           }
         },
-        plugins: { legend: { display: false } }
+        plugins: { 
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return '成熟度: ' + context.parsed.y.toFixed(2) + ' 级';
+              }
+            }
+          }
+        }
       }
     });
   }
@@ -1365,20 +1506,28 @@
   function createStackedChart(dimensionResults) {
     const ctx = document.getElementById('stackedChart').getContext('2d');
     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
+    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+    const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
     
     const datasets = [];
     const levelNames = ['1级', '2级', '3级', '4级', '5级'];
-    const colors = ['#ff6b6b', '#ffa94d', '#ffd43b', '#74c0fc', '#51cf66'];
+    const baseColors = ['#ff6b6b', '#ffa94d', '#ffd43b', '#74c0fc', '#51cf66'];
     
     for (let i = 0; i < 5; i++) {
+      // Create gradient for each level
+      const gradient = ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
+      gradient.addColorStop(0, baseColors[i]);
+      gradient.addColorStop(1, i < 2 ? primaryColor : (i < 4 ? primaryDark : baseColors[i]));
+      
       datasets.push({
         label: levelNames[i],
         data: Object.keys(dimensionConfig).map(dimension => {
           const score = dimensionResults[dimension].levelScores[i];
           return score;
         }),
-        backgroundColor: colors[i],
-        borderWidth: 0
+        backgroundColor: gradient,
+        borderColor: baseColors[i],
+        borderWidth: 1
       });
     }
     
@@ -1392,14 +1541,22 @@
           x: {
             stacked: true,
             ticks: {
-              font: { size: 13, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" }
+              font: { size: 13, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" },
+              color: '#333'
+            },
+            grid: {
+              display: false
             }
           },
           y: {
             stacked: true,
             ticks: {
               callback: value => value.toFixed(1) + '%',
-              font: { size: 12, family: "'Microsoft YaHei', Arial, sans-serif" }
+              font: { size: 12, family: "'Microsoft YaHei', Arial, sans-serif" },
+              color: '#666'
+            },
+            grid: {
+              color: '#e0e0e0'
             }
           }
         },
@@ -1407,7 +1564,8 @@
           legend: {
             position: 'top',
             labels: {
-              font: { size: 13, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" }
+              font: { size: 13, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" },
+              color: '#333'
             }
           },
           tooltip: {
@@ -1428,7 +1586,16 @@
     const ctx = document.getElementById('roseChart').getContext('2d');
     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
     const data = Object.values(dimensionResults).map(r => r.maturity);
-    const colors = data.map(v => getMaturityColor(v));
+    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+    const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
+    
+    // Create gradients for each segment
+    const gradients = data.map((v, i) => {
+      const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
+      gradient.addColorStop(0, hexToRgba(primaryColor, 0.8));
+      gradient.addColorStop(1, hexToRgba(primaryDark, 0.4));
+      return gradient;
+    });
     
     charts.rose = new Chart(ctx, {
       type: 'polarArea',
@@ -1436,8 +1603,8 @@
         labels: labels,
         datasets: [{
           data: data,
-          backgroundColor: colors.map(c => hexToRgba(c, 0.7)),
-          borderColor: colors,
+          backgroundColor: gradients,
+          borderColor: primaryColor,
           borderWidth: 2
         }]
       },
@@ -1450,15 +1617,27 @@
             max: 5,
             ticks: {
               stepSize: 1,
-              font: { size: 12, family: "'Microsoft YaHei', Arial, sans-serif" }
+              font: { size: 12, family: "'Microsoft YaHei', Arial, sans-serif" },
+              color: '#666'
             },
             pointLabels: {
-              font: { size: 14, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" }
+              font: { size: 14, weight: 'bold', family: "'Microsoft YaHei', Arial, sans-serif" },
+              color: '#333'
+            },
+            grid: {
+              color: '#e0e0e0'
             }
           }
         },
         plugins: {
-          legend: { display: false }
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.label + ': ' + context.parsed.r.toFixed(2) + ' 级';
+              }
+            }
+          }
         }
       }
     });
@@ -1468,7 +1647,16 @@
     const ctx = document.getElementById('pieChart').getContext('2d');
     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
     const data = Object.values(dimensionResults).map(r => r.maturity);
-    const colors = data.map(v => getMaturityColor(v));
+    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+    const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
+    
+    // Create gradients for each segment
+    const gradients = data.map((v, i) => {
+      const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
+      gradient.addColorStop(0, hexToRgba(primaryColor, 0.9));
+      gradient.addColorStop(1, hexToRgba(primaryDark, 0.6));
+      return gradient;
+    });
     
     charts.pie = new Chart(ctx, {
       type: 'doughnut',
@@ -1476,8 +1664,8 @@
         labels: labels,
         datasets: [{
           data: data,
-          backgroundColor: colors.map(c => hexToRgba(c, 0.8)),
-          borderColor: colors,
+          backgroundColor: gradients,
+          borderColor: primaryColor,
           borderWidth: 2
         }]
       },
@@ -1489,7 +1677,8 @@
             position: 'bottom',
             labels: {
               font: { size: 13, family: "'Microsoft YaHei', Arial, sans-serif" },
-              padding: 15
+              padding: 15,
+              color: '#333'
             }
           },
           tooltip: {
