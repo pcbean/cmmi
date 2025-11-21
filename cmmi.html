@@ -1568,12 +1568,12 @@
       plugins: [{
         afterDraw: (chart) => {
           const ctx = chart.ctx;
-          const width = chart.width;
+      const width = chart.width;
           const height = chart.height;
           const centerX = width / 2;
-          const centerY = height / 1.25;
+          const centerY = height / 1.15;
           const radius = Math.min(width, height) / 2.3;
-          const labelRadius = radius + 65;
+          const labelRadius = radius - 35;
           const arcBaseline = centerY + radius + 12;
           
           ctx.save();
@@ -1953,37 +1953,28 @@
     `).join('');
   }
 
-  function createPieChart(dimensionResults, color) {
+ function createPieChart(dimensionResults, color) {
     const ctx = document.getElementById('pieChart').getContext('2d');
     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
     const data = Object.values(dimensionResults).map(r => r.maturity);
     const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
 
-    // Use the same color generation method as dimension cards
-    const levelColors = generateLevelColors(primaryColor);
-
-    // Create a color palette by cycling through different hues
+    // Generate lighter colors for pie chart based on primary color
     const colors = [];
-    const hslStart = rgbToHsl(primaryColor);
-
-    // Use the same lightness values as stacked chart for consistency
-    const lightnessValues = [65, 55, 45, 35, 25];
-
+    const hslBase = rgbToHsl(primaryColor);
+    
+    // Assign colors based on maturity level (much lighter for pie chart)
     for (let i = 0; i < data.length; i++) {
-      const hue = (hslStart.h + (i / data.length * 60)) % 360;
-      const saturation = hslStart.s;
-      // Use standardized lightness values matching the stacked chart
-      const lightness = lightnessValues[i % 5];
-      const rgbColor = hslToRgb(hue, saturation, lightness);
+      const maturityLevel = Math.floor(data[i]);
+      const lightness = 80 - (maturityLevel * 5); // 80, 75, 70, 65, 60 - much lighter range
+      const saturation = hslBase.s * 0.8; // Reduce saturation by 20% for softer colors
+      const rgbColor = hslToRgb(hslBase.h, saturation, lightness);
       colors.push(rgbColor);
     }
 
-     // Create gradients for each segment using different colors
+     // Create simple solid colors without gradients for lighter appearance
      const gradients = colors.map((c, i) => {
-       const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
-       gradient.addColorStop(0, c);
-       gradient.addColorStop(1, adjustColorBrightness(c, -10));
-       return gradient;
+       return c;
      });
 
      charts.pie = new Chart(ctx, {
