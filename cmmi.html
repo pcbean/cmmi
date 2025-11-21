@@ -361,44 +361,116 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+    gap: 15px;
     transition: transform 0.3s ease;
   }
   .dimension-cards-container.vertical .dimension-card {
     flex-direction: row;
     padding: 20px 30px;
-    align-items: center;
+    align-items: stretch;
     justify-content: space-between;
+    gap: 25px;
   }
   .dimension-card:hover {
     transform: translateY(-5px);
   }
+  .dimension-card .card-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .dimension-cards-container.vertical .dimension-card .card-header {
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+  }
+  .dimension-card .card-content {
+    text-align: center;
+  }
+  .dimension-cards-container.vertical .dimension-card .card-content {
+    text-align: left;
+  }
   .dimension-card .card-maturity {
     font-size: 48px;
     font-weight: bold;
-    margin-bottom: 8px;
+    margin-bottom: 0;
   }
   .dimension-cards-container.vertical .dimension-card .card-maturity {
     font-size: 56px;
-    margin-bottom: 0;
-    margin-right: 20px;
+    margin-right: 10px;
   }
   .dimension-card .card-name {
     font-size: 16px;
     opacity: 0.9;
   }
-  .dimension-cards-container.vertical .dimension-card .card-content {
-    flex: 1;
-    text-align: left;
-  }
   .dimension-cards-container.vertical .dimension-card .card-name {
     font-size: 18px;
     font-weight: 600;
-    margin-bottom: 8px;
   }
   .dimension-card .card-level {
     font-size: 13px;
     opacity: 0.85;
-    margin-top: 5px;
+    margin-top: 4px;
+  }
+  .dimension-cards-container.vertical .dimension-card .card-level {
+    margin-top: 2px;
+  }
+  .dimension-card .card-extra {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .dimension-cards-container.vertical .dimension-card .card-extra {
+    flex: 1.2;
+    justify-content: center;
+  }
+  .card-sparkline-wrapper,
+  .card-heatmap-wrapper {
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px 15px;
+    backdrop-filter: blur(4px);
+  }
+  .card-extra-label {
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.9;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .card-sparkline {
+    width: 100%;
+    height: 60px;
+  }
+  .card-sparkline canvas {
+    width: 100%;
+    height: 60px;
+  }
+  .dimension-cards-container.vertical .card-sparkline {
+    height: 70px;
+  }
+  .card-heatmap {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .mini-heat-cell {
+    border-radius: 10px;
+    padding: 6px 0;
+    font-size: 10px;
+    line-height: 1.2;
+    font-weight: 600;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mini-heat-cell strong {
+    font-size: 11px;
   }
   .chart-card {
     background: white;
@@ -414,6 +486,29 @@
   .chart-card canvas {
     flex: 1;
     max-height: 350px;
+  }
+  .chart-legend {
+    margin-top: 15px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+  .chart-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #555;
+    background: #f1f3f5;
+    padding: 6px 12px;
+    border-radius: 20px;
+  }
+  .chart-legend .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
   }
   .chart-card.full-width {
     grid-column: 1 / -1;
@@ -978,6 +1073,7 @@
           <div class="chart-card">
             <h3>维度占比玫瑰图</h3>
             <canvas id="roseChart"></canvas>
+            <div class="chart-legend" id="roseChartLegend"></div>
           </div>
           <div class="chart-card">
             <h3>维度成熟度饼状图</h3>
@@ -1054,6 +1150,8 @@
   };
 
   let charts = {};
+  let cardSparklines = [];
+  let latestDimensionResults = null;
 
   // 添加自动计算未完成项的功能
   document.querySelectorAll('input[type="number"]').forEach(input => {
@@ -1292,6 +1390,7 @@
     `).join('');
     
     // 生成维度卡片
+    latestDimensionResults = dimensionResults;
     generateDimensionCards(dimensionResults);
 
     // 生成热力图
@@ -1410,6 +1509,8 @@
           const centerX = width / 2;
           const centerY = height / 1.25;
           const radius = Math.min(width, height) / 2.3;
+          const labelRadius = radius + 65;
+          const arcBaseline = centerY + radius + 12;
           
           ctx.save();
           
@@ -1442,15 +1543,15 @@
             
             // Draw tick labels for major ticks
             if (isMajor) {
-              const labelX = centerX + Math.cos(angle) * (radius + 40);
-              const labelY = centerY + Math.sin(angle) * (radius + 40);
+              const labelX = centerX + Math.cos(angle) * labelRadius;
+              const labelY = centerY + Math.sin(angle) * labelRadius;
               ctx.font = 'bold 14px Arial';
               ctx.fillStyle = '#333';
               ctx.textAlign = 'center';
               ctx.textBaseline = 'middle';
               ctx.fillText((i * 0.5).toFixed(1), labelX, labelY);
             }
-          }
+
           
           // Draw center circle
           ctx.beginPath();
@@ -1485,7 +1586,8 @@
           ctx.font = '16px Arial';
           ctx.fillStyle = color;
           ctx.textAlign = 'center';
-          ctx.fillText(descText, width / 2, textY + 45);
+          ctx.textBaseline = 'middle';
+          ctx.fillText(descText, width / 2, arcBaseline);
           
           ctx.restore();
         }
@@ -1769,12 +1871,24 @@
         }
       }
     });
+
+    renderRoseChartLegend(labels, colors, data);
+  }
+
+  function renderRoseChartLegend(labels, colors, data) {
+    const legendContainer = document.getElementById('roseChartLegend');
+    if (!legendContainer) return;
+
+    legendContainer.innerHTML = labels.map((label, index) => `
+      <div class="legend-item">
+        <span class="legend-color" style="background: ${colors[index]};"></span>
+        <span>${label}：${data[index].toFixed(2)}级</span>
+      </div>
+    `).join('');
   }
 
   function createPieChart(dimensionResults, color) {
-    const ctx = document.getElementById('pieChart').getContext('2d');
     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
-    const data = Object.values(dimensionResults).map(r => r.maturity);
     const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
     const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
 
@@ -1994,46 +2108,111 @@
       vBtn.classList.add('active');
       hBtn.classList.remove('active');
     }
+
+    if (latestDimensionResults) {
+      generateDimensionCards(latestDimensionResults);
+    }
   }
 
   function generateDimensionCards(dimensionResults) {
     const container = document.getElementById('dimensionCardsContainer');
     const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+    const levelColors = generateLevelColors(primaryColor);
     
     container.innerHTML = '';
     
-    Object.keys(dimensionConfig).forEach((key, index) => {
+    cardSparklines.forEach(chart => chart && chart.destroy());
+    cardSparklines = [];
+    
+    Object.keys(dimensionConfig).forEach((key) => {
       const result = dimensionResults[key];
       const card = document.createElement('div');
       card.className = 'dimension-card';
       
-      // 为每个卡片生成自己的颜色梯度
-      const levelColors = generateLevelColors(primaryColor);
       const levelIndex = Math.min(Math.floor(result.maturity), 4);
       const gradient = `linear-gradient(135deg, ${levelColors[0]} 0%, ${levelColors[levelIndex]} 100%)`;
       card.style.background = gradient;
       
       const maturityValue = result.maturity.toFixed(2);
       const levelDesc = getMaturityLevelDescription(result.maturity).split(' - ')[0].replace('接近', '');
+      const sparklineId = `cardSparkline-${key}`;
+      const heatmapCells = result.levelScores.map((score, levelIdx) => {
+        return `
+          <span class="mini-heat-cell ${getHeatColor(score)}" title="${dimensionConfig[key].name} ${levelIdx + 1}级达成 ${score.toFixed(0)}%">
+            <span>${levelIdx + 1}级</span>
+            <strong>${score.toFixed(0)}%</strong>
+          </span>
+        `;
+      }).join('');
       
-      if (currentCardLayout === 'vertical') {
-        card.innerHTML = `
+      card.innerHTML = `
+        <div class="card-header">
           <div class="card-maturity">${maturityValue}</div>
           <div class="card-content">
             <div class="card-name">${dimensionConfig[key].name}</div>
             <div class="card-level">${levelDesc}</div>
           </div>
-        `;
-      } else {
-        card.innerHTML = `
-          <div class="card-maturity">${maturityValue}</div>
-          <div class="card-name">${dimensionConfig[key].name}</div>
-          <div class="card-level">${levelDesc}</div>
-        `;
-      }
+        </div>
+        <div class="card-extra">
+          <div class="card-sparkline-wrapper">
+            <div class="card-extra-label">级别曲线</div>
+            <div class="card-sparkline">
+              <canvas id="${sparklineId}" height="70"></canvas>
+            </div>
+          </div>
+          <div class="card-heatmap-wrapper">
+            <div class="card-extra-label">热力分布</div>
+            <div class="card-heatmap">
+              ${heatmapCells}
+            </div>
+          </div>
+        </div>
+      `;
       
       container.appendChild(card);
+      createCardSparkline(sparklineId, result.levelScores, primaryColor);
     });
+  }
+
+  function createCardSparkline(canvasId, scores, color) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
+    gradient.addColorStop(0, hexToRgba(color, 0.8));
+    gradient.addColorStop(1, hexToRgba(adjustColorBrightness(color, -20), 0.8));
+    
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['1级', '2级', '3级', '4级', '5级'],
+        datasets: [{
+          data: scores.map(score => Number(score.toFixed(1))),
+          borderColor: color,
+          borderWidth: 2,
+          backgroundColor: hexToRgba(color, 0.15),
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false }
+        },
+        scales: {
+          x: { display: false },
+          y: { display: false, min: 0, max: 100 }
+        }
+      }
+    });
+    
+    cardSparklines.push(chart);
   }
 </script>
 </body>
