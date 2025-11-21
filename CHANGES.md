@@ -480,5 +480,135 @@ for (let level = 1; level <= 5; level++) {
 
 ---
 
+---
+
+## 图表视觉优化与渐变主题系统 / Chart Visual Optimization & Gradient Theme System
+
+### 功能描述 / Feature Description
+对CMMI信息安全能力成熟度评估系统的图表进行全面视觉优化，提升用户体验和视觉一致性：
+
+Comprehensive visual optimization of charts in the CMMI information security capability maturity assessment system to enhance user experience and visual consistency:
+
+1. **左侧图表重构 / Left Chart Redesign**: 将传统仪表盘改为更美观的速度计设计，适合左侧布局和全屏显示
+2. **齿轮刻度系统 / Gear Tick System**: 为仪表盘添加精确的齿轮刻度标记
+3. **渐变主题色系统 / Gradient Theme System**: 所有图表支持动态渐变色，随主题色变化自动更新
+4. **响应式布局优化 / Responsive Layout Optimization**: 改进图表容器的自适应布局
+
+### 技术实现 / Technical Implementation
+
+#### 1. 增强速度计图表 / Enhanced Speedometer Chart
+**位置 / Location**: `createGaugeChart` 函数 (行 1245-1372)
+
+**主要改进 / Key Improvements**:
+- 标题改为"整体成熟度速度计" / Title changed to "Overall Maturity Speedometer"
+- 添加彩色背景弧线显示成熟度等级分布 / Added colored background arc showing maturity level distribution
+- 实现齿轮刻度系统，包含主刻度和次刻度 / Implemented gear tick system with major and minor ticks
+- 添加中心圆点和成熟度描述文字 / Added center dot and maturity description text
+- 使用三色渐变：primary → theme → primary-dark / Uses 3-color gradient: primary → theme → primary-dark
+
+```javascript
+// 齿轮刻度实现 / Gear Tick Implementation
+for (let i = 0; i <= 10; i++) {
+  const angle = Math.PI + (Math.PI * i / 10);
+  const isMajor = i % 2 === 0;
+  const tickLength = isMajor ? 15 : 8;
+  const tickWidth = isMajor ? 2 : 1;
+  // 绘制刻度线和标签 / Draw tick marks and labels
+}
+```
+
+#### 2. 渐变主题系统 / Gradient Theme System
+**所有图表函数更新 / All Chart Functions Updated**:
+
+**雷达图 / Radar Chart**:
+- 径向渐变背景 / Radial gradient background
+- 线性渐变边框 / Linear gradient border
+- 点边框双色设计 / Dual-color point borders
+
+**柱状图 / Bar Chart**:
+- 每个柱子使用垂直渐变 / Each bar uses vertical gradient
+- 统一主题色系 / Unified theme color scheme
+
+**堆叠图 / Stacked Chart**:
+- 每个级别使用渐变色彩 / Each level uses gradient colors
+- 主题色与成熟度色融合 / Theme colors blended with maturity colors
+
+**玫瑰图 / Rose Chart**:
+- 径向渐变分段 / Radial gradient segments
+- 统一边框颜色 / Unified border color
+
+**饼图 / Pie Chart**:
+- 径向渐变扇区 / Radial gradient sectors
+- 增强的数据标签 / Enhanced data labels
+
+#### 3. 响应式布局优化 / Responsive Layout Optimization
+**CSS 修改 / CSS Changes** (行 314-328):
+```css
+.chart-card {
+  display: flex;
+  flex-direction: column;
+}
+.chart-card:first-child {
+  min-height: 400px;  /* 左侧图表最小高度 / Left chart minimum height */
+}
+.chart-card canvas {
+  flex: 1;
+  max-height: 350px;   /* 画布最大高度限制 / Canvas max height limit */
+}
+```
+
+#### 4. 主题色自动更新 / Automatic Theme Color Updates
+**现有功能增强 / Existing Feature Enhancement**:
+`updateThemeColor()` 函数 (行 906-914) 已支持自动重新生成所有图表，确保主题色变化时图表渐变效果同步更新。
+
+**The existing `updateThemeColor()` function (lines 906-914) already supports automatic regeneration of all charts, ensuring gradient effects sync when theme colors change.**
+
+### 视觉效果提升 / Visual Enhancement Details
+
+#### 速度计视觉特性 / Speedometer Visual Features
+- **彩色背景弧线**: 红→橙→黄→蓝→绿 渐变显示成熟度等级 / Colored background arc: Red→Orange→Yellow→Blue→Green gradient showing maturity levels
+- **精确刻度**: 11个刻度点 (0.0-5.0)，主次刻度区分 / Precise ticks: 11 tick points (0.0-5.0), distinguished major/minor ticks
+- **动态描述**: 根据成熟度显示"优秀/良好/中等/一般/待改进" / Dynamic description: Shows "Excellent/Good/Medium/Fair/Needs Improvement" based on maturity
+- **三色渐变**: 主题色渐变效果，与整体设计一致 / Three-color gradient: Theme color gradient effect, consistent with overall design
+
+#### 渐变色彩系统 / Gradient Color System
+- **主色调**: 基于 `--primary-color` CSS变量 / Primary colors: Based on `--primary-color` CSS variable
+- **深色调**: 基于 `--primary-dark` CSS变量 / Dark colors: Based on `--primary-dark` CSS variable  
+- **主题色**: 基于 `--theme-color` CSS变量 / Theme colors: Based on `--theme-color` CSS variable
+- **动态更新**: 主题色变化时所有图表自动更新 / Dynamic updates: All charts automatically update when theme changes
+
+### 兼容性保证 / Compatibility Assurance
+- **向后兼容**: 所有原有功能保持不变 / Backward compatibility: All original features preserved
+- **数据一致性**: 使用相同的数据源和计算逻辑 / Data consistency: Uses same data sources and calculation logic
+- **响应式支持**: 移动端和桌面端均正常显示 / Responsive support: Works on both mobile and desktop
+- **主题兼容**: 与现有主题色系统完全兼容 / Theme compatibility: Fully compatible with existing theme system
+
+### 测试验证 / Testing Verification
+
+#### 视觉测试 / Visual Testing
+- ✅ 速度计图表显示正确，包含所有刻度和标签 / Speedometer chart displays correctly with all ticks and labels
+- ✅ 渐变色彩在所有图表中正常显示 / Gradient colors display properly in all charts
+- ✅ 主题色切换时图表渐变效果同步更新 / Chart gradients sync when theme colors change
+- ✅ 左侧图表在窄屏和全屏下布局合理 / Left chart layout reasonable on narrow and full screens
+
+#### 功能测试 / Functional Testing
+- ✅ 所有图表数据计算正确 / All chart data calculations correct
+- ✅ 鼠标悬停提示正常显示 / Mouse hover tooltips display correctly
+- ✅ 响应式布局在各种屏幕尺寸下正常工作 / Responsive layout works on various screen sizes
+- ✅ 主题色选择器功能正常 / Theme color picker functions properly
+
+#### 性能测试 / Performance Testing
+- ✅ 图表渲染性能无明显下降 / No significant degradation in chart rendering performance
+- ✅ 主题色切换响应迅速 / Theme color switching responds quickly
+- ✅ 内存使用稳定 / Stable memory usage
+
+### 用户体验改进 / User Experience Improvements
+1. **更直观的视觉反馈**: 速度计设计比传统仪表盘更直观易懂 / More intuitive visual feedback: Speedometer design more intuitive than traditional gauge
+2. **统一的视觉风格**: 渐变色系统提供更现代的视觉体验 / Unified visual style: Gradient system provides more modern visual experience
+3. **更好的可读性**: 清晰的刻度和标签提升数据可读性 / Better readability: Clear ticks and labels improve data readability
+4. **响应式适配**: 各种设备上都有良好的显示效果 / Responsive adaptation: Good display effects on various devices
+
+---
+
 **修复完成日期 / Fix Completion Date**: 2024-12
-**修复版本 / Fix Version**: 1.2.0
+**修复版本 / Fix Version**: 1.3.0
