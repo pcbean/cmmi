@@ -255,27 +255,150 @@
     display: none;
   }
   .maturity-level {
-    background: linear-gradient(135deg, var(--theme-color) 0%, var(--theme-color)dd 100%);
-    color: white;
-    padding: 30px;
-    border-radius: 15px;
-    text-align: center;
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
     margin-bottom: 40px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
   }
   .maturity-level h3 {
-    font-size: 18px;
-    margin-bottom: 15px;
-    opacity: 0.9;
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: 600;
+    text-align: left;
   }
-  .maturity-level .level {
-    font-size: 56px;
+  .maturity-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+  }
+  .maturity-right {
+    flex: 0 0 300px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .maturity-circle-container {
+    position: relative;
+    width: 280px;
+    height: 280px;
+  }
+  .maturity-circle-bg {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+    position: absolute;
+    box-shadow: inset 0 4px 20px rgba(0,0,0,0.08);
+  }
+  .maturity-circle-progress {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    position: absolute;
+    transform: rotate(-90deg);
+  }
+  .maturity-circle-inner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  .maturity-circle-value {
+    font-size: 72px;
     font-weight: bold;
-    margin-bottom: 10px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
   }
-  .maturity-level .description {
+  .maturity-circle-label {
+    font-size: 14px;
+    color: #666;
+    margin-top: 8px;
+    font-weight: 500;
+  }
+  .maturity-level-steps {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+  }
+  .maturity-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+  }
+  .maturity-step:hover {
+    transform: translateY(-5px);
+  }
+  .maturity-step-bar {
+    width: 100%;
+    border-radius: 8px 8px 0 0;
+    background: #e9ecef;
+    position: relative;
+    transition: all 0.4s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: bold;
+    color: white;
+  }
+  .maturity-step-bar.active {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    box-shadow: 0 8px 20px rgba(102,126,234,0.4);
+  }
+  .maturity-step-bar.partial {
+    background: linear-gradient(135deg, rgba(102,126,234,0.5) 0%, rgba(118,75,162,0.5) 100%);
+  }
+  .maturity-step:nth-child(1) .maturity-step-bar { height: 60px; }
+  .maturity-step:nth-child(2) .maturity-step-bar { height: 90px; }
+  .maturity-step:nth-child(3) .maturity-step-bar { height: 120px; }
+  .maturity-step:nth-child(4) .maturity-step-bar { height: 150px; }
+  .maturity-step:nth-child(5) .maturity-step-bar { height: 180px; }
+  .maturity-step-label {
+    font-size: 13px;
+    color: #666;
+    text-align: center;
+    font-weight: 500;
+  }
+  .maturity-step-label strong {
+    display: block;
     font-size: 16px;
-    line-height: 1.6;
+    color: #333;
+    margin-bottom: 2px;
+  }
+  .maturity-description-box {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 25px 30px;
+    border-radius: 15px;
+    box-shadow: 0 6px 20px rgba(102,126,234,0.3);
+  }
+  .maturity-description-box .description {
+    font-size: 16px;
+    line-height: 1.8;
+    margin: 0;
   }
   .summary-cards {
     display: grid;
@@ -640,6 +763,13 @@
     .dimension-cards-container {
       grid-template-columns: repeat(3, 1fr);
     }
+    .maturity-level {
+      flex-direction: column;
+      gap: 30px;
+    }
+    .maturity-right {
+      flex: 0 0 auto;
+    }
   }
   @media (max-width: 768px) {
     .summary-cards {
@@ -657,6 +787,25 @@
       align-items: flex-start;
       gap: 10px;
     }
+    .maturity-circle-container {
+      width: 240px;
+      height: 240px;
+    }
+    .maturity-circle-inner {
+      width: 190px;
+      height: 190px;
+    }
+    .maturity-circle-value {
+      font-size: 56px;
+    }
+    .maturity-step-bar {
+      font-size: 20px;
+    }
+    .maturity-step:nth-child(1) .maturity-step-bar { height: 50px; }
+    .maturity-step:nth-child(2) .maturity-step-bar { height: 70px; }
+    .maturity-step:nth-child(3) .maturity-step-bar { height: 90px; }
+    .maturity-step:nth-child(4) .maturity-step-bar { height: 110px; }
+    .maturity-step:nth-child(5) .maturity-step-bar { height: 130px; }
   }
 </style>
 </head>
@@ -997,9 +1146,72 @@
 
       <div class="results-section" id="results">
         <div class="maturity-level" id="maturityLevel">
-          <h3>整体成熟度等级</h3>
-          <div class="level" id="levelValue">-</div>
-          <div class="description" id="levelDescription">-</div>
+          <div class="maturity-left">
+            <h3>🎯 整体成熟度等级</h3>
+            <div class="maturity-level-steps" id="maturitySteps">
+              <div class="maturity-step" data-level="1">
+                <div class="maturity-step-bar">1</div>
+                <div class="maturity-step-label">
+                  <strong>1级</strong>
+                  <span>非正式</span>
+                </div>
+              </div>
+              <div class="maturity-step" data-level="2">
+                <div class="maturity-step-bar">2</div>
+                <div class="maturity-step-label">
+                  <strong>2级</strong>
+                  <span>计划跟踪</span>
+                </div>
+              </div>
+              <div class="maturity-step" data-level="3">
+                <div class="maturity-step-bar">3</div>
+                <div class="maturity-step-label">
+                  <strong>3级</strong>
+                  <span>充分定义</span>
+                </div>
+              </div>
+              <div class="maturity-step" data-level="4">
+                <div class="maturity-step-bar">4</div>
+                <div class="maturity-step-label">
+                  <strong>4级</strong>
+                  <span>量化控制</span>
+                </div>
+              </div>
+              <div class="maturity-step" data-level="5">
+                <div class="maturity-step-bar">5</div>
+                <div class="maturity-step-label">
+                  <strong>5级</strong>
+                  <span>持续优化</span>
+                </div>
+              </div>
+            </div>
+            <div class="maturity-description-box">
+              <div class="description" id="levelDescription">-</div>
+            </div>
+          </div>
+          <div class="maturity-right">
+            <div class="maturity-circle-container">
+              <div class="maturity-circle-bg"></div>
+              <svg class="maturity-circle-progress" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="#e9ecef" stroke-width="8"/>
+                <circle id="maturityProgressCircle" cx="50" cy="50" r="45" fill="none" 
+                        stroke="url(#maturityGradient)" stroke-width="8" 
+                        stroke-dasharray="282.7" stroke-dashoffset="282.7"
+                        stroke-linecap="round"
+                        style="transition: stroke-dashoffset 1s ease"/>
+                <defs>
+                  <linearGradient id="maturityGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:var(--primary-color);stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:var(--primary-dark);stop-opacity:1" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="maturity-circle-inner">
+                <div class="maturity-circle-value" id="levelValue">-</div>
+                <div class="maturity-circle-label">成熟度等级</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="summary-cards">
@@ -1435,8 +1647,29 @@
 
        // 更新整体等级
        const levelDesc = getMaturityLevelDescription(overallMaturity);
-       document.getElementById('levelValue').textContent = overallMaturity.toFixed(2) + ' 级';
+       document.getElementById('levelValue').textContent = overallMaturity.toFixed(2);
        document.getElementById('levelDescription').textContent = levelDesc;
+       
+       // 更新圆形进度条
+       const progressCircle = document.getElementById('maturityProgressCircle');
+       const circumference = 2 * Math.PI * 45; // r=45
+       const progress = (overallMaturity / 5) * circumference;
+       const offset = circumference - progress;
+       progressCircle.style.strokeDashoffset = offset;
+       
+       // 更新等级阶梯
+       const steps = document.querySelectorAll('.maturity-step');
+       steps.forEach((step, index) => {
+         const level = index + 1;
+         const bar = step.querySelector('.maturity-step-bar');
+         bar.classList.remove('active', 'partial');
+         
+         if (overallMaturity >= level) {
+           bar.classList.add('active');
+         } else if (overallMaturity >= level - 1 && overallMaturity < level) {
+           bar.classList.add('partial');
+         }
+       });
 
        // 生成洞察
        const insights = generateInsights(dimensionResults, overallMaturity);
