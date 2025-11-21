@@ -949,10 +949,10 @@
         </div>
 
         <div class="card-layout-controls">
-          <label>📋 卡片布局：</label>
-          <button id="cardLayoutHorizontal" class="layout-btn active" onclick="setCardLayout('horizontal')">横向展示</button>
-          <button id="cardLayoutVertical" class="layout-btn" onclick="setCardLayout('vertical')">纵向排列</button>
-        </div>
+                   <label>📋 卡片布局：</label>
+                   <button id="cardLayoutHorizontal" class="active" onclick="setCardLayout('horizontal')">横向展示</button>
+                   <button id="cardLayoutVertical" onclick="setCardLayout('vertical')">纵向排列</button>
+                 </div>
 
         <div class="dimension-cards-container" id="dimensionCardsContainer">
           <!-- 会由 JavaScript 动态生成 -->
@@ -960,7 +960,7 @@
 
         <div class="charts-container">
            <div class="chart-card">
-             <h3>整体成熟度速度计</h3>
+             <h3>整体成熟度</h3>
              <canvas id="gaugeChart"></canvas>
            </div>
           <div class="chart-card">
@@ -1360,8 +1360,8 @@
      createRadarChart(dimensionResults, primaryColor);
      createBarChart(dimensionResults);
      createStackedChart(dimensionResults);
-     createRoseChart(dimensionResults);
-     createPieChart(dimensionResults);
+     createRoseChart(dimensionResults, primaryColor);
+     createPieChart(dimensionResults, primaryColor);
    }
 
   function createGaugeChart(maturity, color) {
@@ -1442,8 +1442,8 @@
             
             // Draw tick labels for major ticks
             if (isMajor) {
-              const labelX = centerX + Math.cos(angle) * (radius + 25);
-              const labelY = centerY + Math.sin(angle) * (radius + 25);
+              const labelX = centerX + Math.cos(angle) * (radius + 30);
+              const labelY = centerY + Math.sin(angle) * (radius + 30);
               ctx.font = 'bold 14px Arial';
               ctx.fillStyle = '#333';
               ctx.textAlign = 'center';
@@ -1485,7 +1485,7 @@
           ctx.font = '16px Arial';
           ctx.fillStyle = color;
           ctx.textAlign = 'center';
-          ctx.fillText(descText, width / 2, textY + 30);
+          ctx.fillText(descText, width / 2, textY + 35);
           
           ctx.restore();
         }
@@ -1697,14 +1697,14 @@
     });
   }
 
-  function createRoseChart(dimensionResults) {
+  function createRoseChart(dimensionResults, color) {
     const ctx = document.getElementById('roseChart').getContext('2d');
     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
     const data = Object.values(dimensionResults).map(r => r.maturity);
-    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+    const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
     const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
     
-    // Create gradients for each segment
+    // Create gradients for each segment using the theme color
     const gradients = data.map((v, i) => {
       const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
       gradient.addColorStop(0, hexToRgba(primaryColor, 0.8));
@@ -1758,14 +1758,14 @@
     });
   }
 
-  function createPieChart(dimensionResults) {
+  function createPieChart(dimensionResults, color) {
     const ctx = document.getElementById('pieChart').getContext('2d');
     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
     const data = Object.values(dimensionResults).map(r => r.maturity);
-    const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+    const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
     const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
     
-    // Create gradients for each segment
+    // Create gradients for each segment using the theme color
     const gradients = data.map((v, i) => {
       const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
       gradient.addColorStop(0, hexToRgba(primaryColor, 0.9));
