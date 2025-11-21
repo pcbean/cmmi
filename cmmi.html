@@ -1864,29 +1864,32 @@
   }
 
   function createRoseChart(dimensionResults, color) {
-     const ctx = document.getElementById('roseChart').getContext('2d');
-     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
-     const data = Object.values(dimensionResults).map(r => r.maturity);
-     const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+    const ctx = document.getElementById('roseChart').getContext('2d');
+    const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
+    const data = Object.values(dimensionResults).map(r => r.maturity);
+    const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
 
-     // Create different colors for each dimension using HSL with fixed lightness
-     const colors = [];
-     const hslStart = rgbToHsl(primaryColor);
+    // Create different colors for each dimension using HSL with fixed lightness
+    const colors = [];
+    const hslStart = rgbToHsl(primaryColor);
 
-     for (let i = 0; i < data.length; i++) {
-       const hue = (hslStart.h + (i / data.length * 60)) % 360;
-       const saturation = hslStart.s;
-       // Use fixed lightness levels for consistency - not too dark, not too light
-       const lightness = 50 - (i % 5) * 8;
-       const rgbColor = hslToRgb(hue, saturation, lightness);
-       colors.push(rgbColor);
-     }
+    // Use the same lightness values as stacked chart for consistency
+    const lightnessValues = [65, 55, 45, 35, 25];
+
+    for (let i = 0; i < data.length; i++) {
+      const hue = (hslStart.h + (i / data.length * 60)) % 360;
+      const saturation = hslStart.s;
+      // Use standardized lightness values matching the stacked chart
+      const lightness = lightnessValues[i % 5];
+      const rgbColor = hslToRgb(hue, saturation, lightness);
+      colors.push(rgbColor);
+    }
 
      // Create gradients for each segment using different colors
      const gradients = colors.map((c, i) => {
        const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
-       gradient.addColorStop(0, hexToRgba(c, 0.7));
-       gradient.addColorStop(1, hexToRgba(adjustColorBrightness(c, -15), 0.5));
+       gradient.addColorStop(0, hexToRgba(c, 0.75));
+       gradient.addColorStop(1, hexToRgba(adjustColorBrightness(c, -10), 0.6));
        return gradient;
      });
 
@@ -1951,32 +1954,35 @@
   }
 
   function createPieChart(dimensionResults, color) {
-     const ctx = document.getElementById('pieChart').getContext('2d');
-     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
-     const data = Object.values(dimensionResults).map(r => r.maturity);
-     const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+    const ctx = document.getElementById('pieChart').getContext('2d');
+    const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
+    const data = Object.values(dimensionResults).map(r => r.maturity);
+    const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
 
-     // Use the same color generation method as dimension cards
-     const levelColors = generateLevelColors(primaryColor);
+    // Use the same color generation method as dimension cards
+    const levelColors = generateLevelColors(primaryColor);
 
-     // Create a color palette by cycling through different hues
-     const colors = [];
-     const hslStart = rgbToHsl(primaryColor);
+    // Create a color palette by cycling through different hues
+    const colors = [];
+    const hslStart = rgbToHsl(primaryColor);
 
-     for (let i = 0; i < data.length; i++) {
-       const hue = (hslStart.h + (i / data.length * 60)) % 360;
-       const saturation = hslStart.s;
-       // Use fixed lightness levels for consistency
-       const lightness = 50 - (i % 5) * 10;
-       const rgbColor = hslToRgb(hue, saturation, lightness);
-       colors.push(rgbColor);
-     }
+    // Use the same lightness values as stacked chart for consistency
+    const lightnessValues = [65, 55, 45, 35, 25];
+
+    for (let i = 0; i < data.length; i++) {
+      const hue = (hslStart.h + (i / data.length * 60)) % 360;
+      const saturation = hslStart.s;
+      // Use standardized lightness values matching the stacked chart
+      const lightness = lightnessValues[i % 5];
+      const rgbColor = hslToRgb(hue, saturation, lightness);
+      colors.push(rgbColor);
+    }
 
      // Create gradients for each segment using different colors
      const gradients = colors.map((c, i) => {
        const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
        gradient.addColorStop(0, c);
-       gradient.addColorStop(1, adjustColorBrightness(c, -15));
+       gradient.addColorStop(1, adjustColorBrightness(c, -10));
        return gradient;
      });
 
