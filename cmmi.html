@@ -1442,8 +1442,8 @@
             
             // Draw tick labels for major ticks
             if (isMajor) {
-              const labelX = centerX + Math.cos(angle) * (radius + 30);
-              const labelY = centerY + Math.sin(angle) * (radius + 30);
+              const labelX = centerX + Math.cos(angle) * (radius + 40);
+              const labelY = centerY + Math.sin(angle) * (radius + 40);
               ctx.font = 'bold 14px Arial';
               ctx.fillStyle = '#333';
               ctx.textAlign = 'center';
@@ -1471,9 +1471,9 @@
           ctx.font = '18px Arial';
           ctx.fillStyle = '#666';
           const levelText = '级';
-          const levelX = textX + ctx.measureText(text).width + 20;
+          const levelX = textX + ctx.measureText(text).width + 30;
           ctx.fillText(levelText, levelX, textY);
-          
+
           // Draw maturity description
           let descText = '';
           if (maturity >= 4.5) descText = '优秀';
@@ -1481,11 +1481,11 @@
           else if (maturity >= 2.5) descText = '中等';
           else if (maturity >= 1.5) descText = '一般';
           else descText = '待改进';
-          
+
           ctx.font = '16px Arial';
           ctx.fillStyle = color;
           ctx.textAlign = 'center';
-          ctx.fillText(descText, width / 2, textY + 35);
+          ctx.fillText(descText, width / 2, textY + 45);
           
           ctx.restore();
         }
@@ -1703,12 +1703,25 @@
     const data = Object.values(dimensionResults).map(r => r.maturity);
     const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
     const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
-    
-    // Create gradients for each segment using the theme color
-    const gradients = data.map((v, i) => {
+
+    // Create different colors for each dimension using HSL
+    const colors = [];
+    const hslStart = rgbToHsl(primaryColor);
+    const hslEnd = rgbToHsl(primaryDark);
+
+    for (let i = 0; i < data.length; i++) {
+      const hue = (hslStart.h + (i / data.length * 60)) % 360;
+      const saturation = hslStart.s;
+      const lightness = hslStart.l - (i / data.length * 20);
+      const rgbColor = hslToRgb(hue, saturation, lightness);
+      colors.push(rgbColor);
+    }
+
+    // Create gradients for each segment using different colors
+    const gradients = colors.map((c, i) => {
       const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
-      gradient.addColorStop(0, hexToRgba(primaryColor, 0.8));
-      gradient.addColorStop(1, hexToRgba(primaryDark, 0.4));
+      gradient.addColorStop(0, hexToRgba(c, 0.8));
+      gradient.addColorStop(1, hexToRgba(adjustColorBrightness(c, -30), 0.4));
       return gradient;
     });
     
@@ -1764,12 +1777,25 @@
     const data = Object.values(dimensionResults).map(r => r.maturity);
     const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
     const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
-    
-    // Create gradients for each segment using the theme color
-    const gradients = data.map((v, i) => {
+
+    // Create different colors for each dimension using HSL
+    const colors = [];
+    const hslStart = rgbToHsl(primaryColor);
+    const hslEnd = rgbToHsl(primaryDark);
+
+    for (let i = 0; i < data.length; i++) {
+      const hue = (hslStart.h + (i / data.length * 60)) % 360;
+      const saturation = hslStart.s;
+      const lightness = hslStart.l - (i / data.length * 20);
+      const rgbColor = hslToRgb(hue, saturation, lightness);
+      colors.push(rgbColor);
+    }
+
+    // Create gradients for each segment using different colors
+    const gradients = colors.map((c, i) => {
       const gradient = ctx.createRadialGradient(ctx.canvas.width/2, ctx.canvas.height/2, 0, ctx.canvas.width/2, ctx.canvas.height/2, Math.min(ctx.canvas.width, ctx.canvas.height)/2);
-      gradient.addColorStop(0, hexToRgba(primaryColor, 0.9));
-      gradient.addColorStop(1, hexToRgba(primaryDark, 0.6));
+      gradient.addColorStop(0, c);
+      gradient.addColorStop(1, adjustColorBrightness(c, -30));
       return gradient;
     });
     
@@ -1823,6 +1849,69 @@
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function rgbToHsl(hex) {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+
+    if (max === min) {
+      h = s = 0;
+    } else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      h /= 6;
+    }
+    return { h: h * 360, s: s * 100, l: l * 100 };
+  }
+
+  function hslToRgb(h, s, l) {
+    h = h / 360;
+    s = s / 100;
+    l = l / 100;
+
+    let r, g, b;
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+
+    const toHex = (x) => {
+      const hex = Math.round(x * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    return '#' + toHex(r) + toHex(g) + toHex(b);
+  }
+
+  function adjustColorBrightness(hex, percent) {
+    const num = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = Math.min(255, Math.max(0, (num >> 16) + amt));
+    const G = Math.min(255, Math.max(0, (num >> 8 & 0x00FF) + amt));
+    const B = Math.min(255, Math.max(0, (num & 0x0000FF) + amt));
+    return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
   }
 
   function generateLevelColors(baseColor) {
