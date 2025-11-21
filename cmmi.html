@@ -1557,47 +1557,47 @@
               ctx.textBaseline = 'middle';
               ctx.fillText((i * 0.5).toFixed(1), labelX, labelY);
             }
+            }
 
-          
-          // Draw center circle
-          ctx.beginPath();
-          ctx.arc(centerX, centerY, 8, 0, 2 * Math.PI);
-          ctx.fillStyle = color;
-          ctx.fill();
-          
-          // Draw maturity value
-          ctx.font = 'bold 42px Arial';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = '#333';
-          const text = maturity.toFixed(2);
-          const textX = Math.round((width - ctx.measureText(text).width) / 2);
-          const textY = height / 1.4;
-          ctx.fillText(text, textX, textY);
-          
-          // Draw level indicator
-          ctx.font = '18px Arial';
-          ctx.fillStyle = '#666';
-          const levelText = '级';
-          const levelX = textX + ctx.measureText(text).width + 30;
-          ctx.fillText(levelText, levelX, textY);
+            // Draw center circle
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 8, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
 
-          // Draw maturity description
-          let descText = '';
-          if (maturity >= 4.5) descText = '优秀';
-          else if (maturity >= 3.5) descText = '良好';
-          else if (maturity >= 2.5) descText = '中等';
-          else if (maturity >= 1.5) descText = '一般';
-          else descText = '待改进';
+            // Draw maturity value
+            ctx.font = 'bold 42px Arial';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#333';
+            const text = maturity.toFixed(2);
+            const textX = Math.round((width - ctx.measureText(text).width) / 2);
+            const textY = height / 1.4;
+            ctx.fillText(text, textX, textY);
 
-          ctx.font = '16px Arial';
-          ctx.fillStyle = color;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(descText, width / 2, arcBaseline);
-          
-          ctx.restore();
-        }
-      }]
+            // Draw level indicator
+            ctx.font = '18px Arial';
+            ctx.fillStyle = '#666';
+            const levelText = '级';
+            const levelX = textX + ctx.measureText(text).width + 30;
+            ctx.fillText(levelText, levelX, textY);
+
+            // Draw maturity description
+            let descText = '';
+            if (maturity >= 4.5) descText = '优秀';
+            else if (maturity >= 3.5) descText = '良好';
+            else if (maturity >= 2.5) descText = '中等';
+            else if (maturity >= 1.5) descText = '一般';
+            else descText = '待改进';
+
+            ctx.font = '16px Arial';
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(descText, width / 2, arcBaseline);
+
+            ctx.restore();
+            }
+            }]
     });
   }
 
