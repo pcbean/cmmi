@@ -1894,14 +1894,14 @@
   }
 
   function createPieChart(dimensionResults, color) {
+    const ctx = document.getElementById('pieChart').getContext('2d');
     const labels = Object.keys(dimensionConfig).map(key => dimensionConfig[key].name);
+    const data = Object.values(dimensionResults).map(r => r.maturity);
     const primaryColor = color || getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
-    const primaryDark = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
 
     // Create different colors for each dimension using HSL
     const colors = [];
     const hslStart = rgbToHsl(primaryColor);
-    const hslEnd = rgbToHsl(primaryDark);
 
     for (let i = 0; i < data.length; i++) {
       const hue = (hslStart.h + (i / data.length * 60)) % 360;
